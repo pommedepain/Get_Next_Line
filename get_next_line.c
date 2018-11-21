@@ -6,63 +6,83 @@
 /*   By: psentilh <psentilh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/11/20 15:35:12 by psentilh          #+#    #+#             */
-/*   Updated: 2018/11/20 17:34:02 by psentilh         ###   ########.fr       */
+/*   Updated: 2018/11/21 19:57:19 by psentilh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 #include <stdio.h>
 
-char    *ft_read(void)
-{
-    int total_size;
-    int size_count;
-    char *temp;
-    char *result;
-    char buff[32];
-    //int fd;
+ //utiliser strchr pour lui permettre d'afficher jusqu'au \n mais attention car le read s'il depasse le \n va quand meme le lire donc trouver moyen de stocker ce qui a ete lu (voir variables statiques).
 
-    result = NULL;
-    total_size = 0;
-    while ((size_count = read(0, buff, 31)) > 0)
+int     read_from_fd_into_stock(const int fd, char **stock)
+{
+    static char     buff[BUFF_SIZE + 1];
+    int             read_bytes;
+    char            *nstr;
+
+    //*buff = '\n';
+    read_bytes = read(fd, buff, BUFF_SIZE);
+    if (read_bytes > 0)
     {
-        total_size = total_size + size_count;
-        printf("1 : %d\n", size_count);
-        temp = result;
-        buff[size_count] = '\0';
-        if (!(result = (char *)malloc(sizeof(char) * (total_size + 1))))
-            return (0);
-        *result = '\0';
-        if (temp)
-            ft_strcpy(result, temp);
-        ft_strcat(result, buff);
-        if (temp)
-            free(temp);
+        buff[read_bytes] = '\0';
+        nstr = ft_strjoin(*stock, buff);
+        if (!nstr)
+            return (-1);
+        free(*stock);
+        *stock = nstr;
     }
-    printf("2 : %s\n", result);
-    return (result);
+    return (read_bytes);
 }
 
 int     get_next_line(const int fd, char **line)
 {
-    /*char    *temp;
-    int     ret;
+   /* char    *temp;
+    int     ret;*/
+    static char *stock;
+    char        *endl_index;
+    int         ret;
 
-    if(!(temp = (char *)malloc(sizeof(char) * BUFF_SIZE + 1)))
+    stock = NULL;
+    if (!stock && (stock = (char *)ft_memalloc(sizeof(char))) == NULL)
+        return (-1);
+    // endl_index garde en memoire l'emplacement de \n
+    endl_index = ft_strchr(stock, '\n');
+    while (endl_index == NULL)
+    {
+        ret = read_from_fd_into_stock(fd, &stock);
+        if (ret == 0)
+        {
+            if ((endl_index = ft_strchr(stock, '\0')) == stock)
+                return (0);
+        }
+        else if (ret < 0)
+            return (-1);
+        else
+            endl_index = ft_strchr(stock, '\n');
+    }
+    *line = ft_strsub(stock, 0, endl_index - stock);
+    if (!*line)
+        return (-1);
+    endl_index = ft_strdup(endl_index + 1);
+    free(stock);
+    stock = endl_index;
+    return (1);
+    /*if (!(temp = (char *)malloc(sizeof(char) * BUFF_SIZE + 1)))
         return (0);
     ret = read(fd, temp, BUFF_SIZE);
     temp[ret] = '\0';
     ft_putnbr(ret);
-    ft_putstr(temp);*/
-    while (fd)
-        ft_read();
-    return (0);
+    ft_putstr(temp);
+    return (0);*/
 }
 
 int     main(void)
 {
     int fd;
     char *line;
+    int i = 0;
+    int j;
 
     fd = open("test.txt", O_RDONLY);
     if (fd == -1)
@@ -70,7 +90,15 @@ int     main(void)
         ft_putstr("open() failed\n");
         return (1);
     }
-    get_next_line(fd, &line);
+    while (i < 3)
+    {
+        j = get_next_line(fd, &line);
+        ft_putnbr(j);
+        ft_putchar('\n');
+        ft_putstr(line);
+        ft_putchar('\n');
+        i++;
+    }
     if (close(fd) == -1)
     {
         ft_putstr("close() failed\n");
