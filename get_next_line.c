@@ -1,80 +1,65 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_next_line.c                                    :+:      :+:    :+:   */
+/*   get_next_line2.c                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: psentilh <psentilh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2018/11/20 15:35:12 by psentilh          #+#    #+#             */
-/*   Updated: 2018/11/21 19:57:19 by psentilh         ###   ########.fr       */
+/*   Created: 2018/11/22 19:34:40 by psentilh          #+#    #+#             */
+/*   Updated: 2018/11/22 19:55:54 by psentilh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
-#include <stdio.h>
 
- //utiliser strchr pour lui permettre d'afficher jusqu'au \n mais attention car le read s'il depasse le \n va quand meme le lire donc trouver moyen de stocker ce qui a ete lu (voir variables statiques).
-
-int     read_from_fd_into_stock(const int fd, char **stock)
+static char	*readline(const int fd, char *buff, int *ret)
 {
-    static char     buff[BUFF_SIZE + 1];
-    int             read_bytes;
-    char            *nstr;
+	char	tmp[BUFF_SIZE + 1];
+	char	*tmp2;
 
-    //*buff = '\n';
-    read_bytes = read(fd, buff, BUFF_SIZE);
-    if (read_bytes > 0)
-    {
-        buff[read_bytes] = '\0';
-        nstr = ft_strjoin(*stock, buff);
-        if (!nstr)
-            return (-1);
-        free(*stock);
-        *stock = nstr;
-    }
-    return (read_bytes);
+	*ret = read(fd, tmp, BUFF_SIZE);
+	tmp[*ret] = '\0';
+	tmp2 = buff;
+	if (!(buff = ft_strjoin(buff, tmp)))
+		return (NULL);
+	ft_strdel(&tmp2);
+	return (buff);
+}
+
+int		ft_cpy_end(char **line, char **buff)
+{
+	if (!(*line = ft_strdup(*buff)))
+		return (-1);
+	ft_bzero(*buff, ft_strlen(*buff));
+	return (1);
 }
 
 int     get_next_line(const int fd, char **line)
 {
-   /* char    *temp;
-    int     ret;*/
-    static char *stock;
-    char        *endl_index;
-    int         ret;
+	static char	*buff = "";
+	int			ret;
+	char		*str;
 
-    stock = NULL;
-    if (!stock && (stock = (char *)ft_memalloc(sizeof(char))) == NULL)
-        return (-1);
-    // endl_index garde en memoire l'emplacement de \n
-    endl_index = ft_strchr(stock, '\n');
-    while (endl_index == NULL)
-    {
-        ret = read_from_fd_into_stock(fd, &stock);
-        if (ret == 0)
-        {
-            if ((endl_index = ft_strchr(stock, '\0')) == stock)
-                return (0);
-        }
-        else if (ret < 0)
-            return (-1);
-        else
-            endl_index = ft_strchr(stock, '\n');
-    }
-    *line = ft_strsub(stock, 0, endl_index - stock);
-    if (!*line)
-        return (-1);
-    endl_index = ft_strdup(endl_index + 1);
-    free(stock);
-    stock = endl_index;
-    return (1);
-    /*if (!(temp = (char *)malloc(sizeof(char) * BUFF_SIZE + 1)))
-        return (0);
-    ret = read(fd, temp, BUFF_SIZE);
-    temp[ret] = '\0';
-    ft_putnbr(ret);
-    ft_putstr(temp);
-    return (0);*/
+	ret = 1;
+	if (!line || fd < 0 || (buff[0] == '\0' && (!(buff = ft_strnew(0)))))
+		return (-1);
+	while (ret > 0)
+	{
+		if ((str = ft_strchr(buff, '\n')) != NULL)
+		{
+			*str = '\0';
+			if (!(*line = ft_strdup(buff)))
+				return (-1);
+			ft_memmove(buff, str + 1, ft_strlen(str + 1) + 1);
+			return (1);
+		}
+		if (!(buff = readline(fd, buff, &ret)))
+			return (-1);
+	}
+	ft_strdel(&str);
+	if (ret == 0 && ft_strlen(buff))
+		ret = ft_cpy_end(&(*line), &buff);
+	return (ret);
 }
 
 int     main(void)
@@ -90,7 +75,7 @@ int     main(void)
         ft_putstr("open() failed\n");
         return (1);
     }
-    while (i < 3)
+    while (i < 11)
     {
         j = get_next_line(fd, &line);
         ft_putnbr(j);
