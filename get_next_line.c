@@ -1,18 +1,20 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_next_line2.c                                   :+:      :+:    :+:   */
+/*   get_next_line.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: psentilh <psentilh@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/11/22 19:34:40 by psentilh          #+#    #+#             */
-/*   Updated: 2018/11/22 19:55:54 by psentilh         ###   ########.fr       */
+/*   Updated: 2018/11/22 21:20:39 by psentilh         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-static char	*readline(const int fd, char *buff, int *ret)
+// Seg fault si BUFF_SIZE depasse les 10 millions
+
+static char	*ft_read_line(const int fd, char *buff, int *ret)
 {
 	char	tmp[BUFF_SIZE + 1];
 	char	*tmp2;
@@ -45,17 +47,22 @@ int     get_next_line(const int fd, char **line)
 		return (-1);
 	while (ret > 0)
 	{
+		// str stock le reste de la chaine apres le \n
 		if ((str = ft_strchr(buff, '\n')) != NULL)
 		{
 			*str = '\0';
+			// copie buff (qui est malloc a 1 \0) dans line
 			if (!(*line = ft_strdup(buff)))
 				return (-1);
+			// copie str dans buff (donc le reste apres \n)
 			ft_memmove(buff, str + 1, ft_strlen(str + 1) + 1);
 			return (1);
 		}
-		if (!(buff = readline(fd, buff, &ret)))
+		// buff prend la valeur d'une ligne
+		if (!(buff = ft_read_line(fd, buff, &ret)))
 			return (-1);
 	}
+	// on free str
 	ft_strdel(&str);
 	if (ret == 0 && ft_strlen(buff))
 		ret = ft_cpy_end(&(*line), &buff);
