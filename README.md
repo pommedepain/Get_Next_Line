@@ -18,5 +18,3 @@ when the reading has been completed, or if an error has happened respectively.</
 available on a file descriptor one line at a time until the end of the text, no matter
 the size of either the text or one of its lines.</li>
 </ul>
-
-![Grade](./Get_next_line.png?raw=true "Grade")
